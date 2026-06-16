@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berlin Airbnb Market Intelligence Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-purple: #a855f7;
+            --accent-pink: #ec4899;
+            --accent-blue: #3b82f6;
+            --accent-emerald: #10b981;
+            --font-main: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .badge {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid var(--accent-purple);
+            color: #d8b4fe;
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-blue);
+        }
+
+        .kpi-card.purple::before { background: var(--accent-purple); }
+        .kpi-card.pink::before { background: var(--accent-pink); }
+        .kpi-card.emerald::before { background: var(--accent-emerald); }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .kpi-title {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .kpi-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            height: 100%;
+        }
+
+        .col-8 { grid-column: span 8; }
+        .col-4 { grid-column: span 4; }
+        .col-6 { grid-column: span 6; }
+        .col-12 { grid-column: span 12; }
+
+        @media (max-width: 1024px) {
+            .col-8, .col-4, .col-6 {
+                grid-column: span 12;
+            }
+        }
+
+        .card-header {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+
+        /* Table Styling */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 1rem;
+            font-size: 0.925rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .progress-bar-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 9999px;
+            height: 8px;
+            width: 100px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.75rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 2rem;
+        }
+
+        footer a {
+            color: var(--accent-purple);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>Berlin Airbnb Market Intelligence</h1>
+                <p>Interactive Analysis & Operational Performance Dashboard</p>
+            </div>
+            <div>
+                <span class="badge">Berlin Open Data 2026</span>
+            </div>
+        </header>
+
+        <!-- KPI Grid -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-title">Total Listings</div>
+                <div class="kpi-value" id="kpi-listings">0</div>
+                <div class="kpi-desc">Active rentals profiled in study</div>
+            </div>
+            <div class="kpi-card purple">
+                <div class="kpi-title">Avg Nightly Price</div>
+                <div class="kpi-value" id="kpi-price">€0</div>
+                <div class="kpi-desc">Across all neighbourhoods & room types</div>
+            </div>
+            <div class="kpi-card pink">
+                <div class="kpi-title">Superhost Ratio</div>
+                <div class="kpi-value" id="kpi-superhost">0%</div>
+                <div class="kpi-desc">Hosts with top hospitality ratings</div>
+            </div>
+            <div class="kpi-card emerald">
+                <div class="kpi-title">Avg Review Score</div>
+                <div class="kpi-value" id="kpi-rating">0.0</div>
+                <div class="kpi-desc">Based on customer rating scores</div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="charts-grid">
+            <div class="card col-8">
+                <div class="card-header">
+                    <div class="card-title">Average Price by Neighbourhood (€)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="neighbourhoodPriceChart"></canvas>
+                </div>
+            </div>
+            <div class="card col-4">
+                <div class="card-header">
+                    <div class="card-title">Room Type Mix</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="roomTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="charts-grid">
+            <div class="card col-5">
+                <div class="card-header">
+                    <div class="card-title">Superhost Premium Comparison</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="superhostChart"></canvas>
+                </div>
+            </div>
+            <div class="card col-7">
+                <div class="card-header">
+                    <div class="card-title">Neighbourhood Performance Benchmark</div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Neighbourhood</th>
+                                <th>Avg Price</th>
+                                <th>Listing Share</th>
+                                <th>Avg Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="neighbourhood-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Designed and Built by <strong>Anusha Subhash</strong> | Candidate for Data / Business Analyst roles in Berlin</p>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem;">Source: Inside Airbnb Berlin (Synthetic Representative Model)</p>
+        </footer>
+    </div>
+
+    <script>
+        // Animate counter values
+        function animateCounter(id, target, prefix = '', suffix = '', decimals = 0) {
+            const el = document.getElementById(id);
+            let start = 0;
+            const duration = 1500;
+            const stepTime = 15;
+            const steps = duration / stepTime;
+            const valPerStep = target / steps;
+
+            const timer = setInterval(() => {
+                start += valPerStep;
+                if (start >= target) {
+                    clearInterval(timer);
+                    start = target;
+                }
+                el.innerText = prefix + start.toFixed(decimals) + suffix;
+            }, stepTime);
+        }
+
+        // Dashboard load initializations
+        window.addEventListener('DOMContentLoaded', () => {
+            animateCounter('kpi-listings', 1000);
+            animateCounter('kpi-price', 96.50, '€', '', 2);
+            animateCounter('kpi-superhost', 18.2, '', '%', 1);
+            animateCounter('kpi-rating', 4.52, '', '', 2);
+
+            // Populate Table
+            const tableData = [
+                { name: 'Mitte', price: 154.20, share: 15.2, rating: 4.55 },
+                { name: 'Charlottenburg', price: 140.50, share: 8.5, rating: 4.48 },
+                { name: 'Prenzlauer Berg', price: 133.10, share: 12.1, rating: 4.62 },
+                { name: 'Kreuzberg', price: 126.80, share: 14.3, rating: 4.58 },
+                { name: 'Friedrichshain', price: 119.50, share: 11.8, rating: 4.54 },
+                { name: 'Schöneberg', price: 112.40, share: 8.1, rating: 4.51 },
+                { name: 'Neukölln', price: 91.20, share: 9.8, rating: 4.45 },
+                { name: 'Wedding', price: 77.30, share: 7.2, rating: 4.38 }
+            ];
+
+            const tbody = document.getElementById('neighbourhood-table-body');
+            tableData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${row.name}</strong></td>
+                    <td>€${row.price.toFixed(2)}</td>
+                    <td>
+                        ${row.share}%
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: ${row.share * 6}px"></div>
+                        </div>
+                    </td>
+                    <td>⭐ ${row.rating.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Chart 1: Neighbourhood Avg Price
+            new Chart(document.getElementById('neighbourhoodPriceChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Mitte', 'Charlottenburg', 'Prenzlauer Berg', 'Kreuzberg', 'Friedrichshain', 'Schöneberg', 'Neukölln', 'Wedding', 'Lichtenberg', 'Steglitz'],
+                    datasets: [{
+                        label: 'Average Nightly Price (€)',
+                        data: [154.2, 140.5, 133.1, 126.8, 119.5, 112.4, 91.2, 77.3, 84.6, 91.5],
+                        backgroundColor: 'rgba(59, 130, 246, 0.65)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Room Type Mix
+            new Chart(document.getElementById('roomTypeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Entire home/apt', 'Private room', 'Shared room', 'Hotel room'],
+                    datasets: [{
+                        data: [60.0, 36.0, 3.0, 1.0],
+                        backgroundColor: [
+                            'rgba(168, 85, 247, 0.75)',
+                            'rgba(236, 72, 153, 0.75)',
+                            'rgba(59, 130, 246, 0.75)',
+                            'rgba(16, 185, 129, 0.75)'
+                        ],
+                        borderColor: 'transparent',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { family: 'Inter' } }
+                        }
+                    }
+                }
+            });
+
+            // Chart 3: Superhost comparison
+            new Chart(document.getElementById('superhostChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Regular Host Price', 'Superhost Price', 'Regular Host Rating (x25)', 'Superhost Rating (x25)'],
+                    datasets: [{
+                        data: [92.1, 116.4, 4.45 * 25, 4.82 * 25],
+                        backgroundColor: [
+                            'rgba(236, 72, 153, 0.6)',
+                            'rgba(236, 72, 153, 0.95)',
+                            'rgba(16, 185, 129, 0.6)',
+                            'rgba(16, 185, 129, 0.95)'
+                        ],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataIndex < 2) {
+                                        return 'Avg Price: €' + context.raw.toFixed(2);
+                                    } else {
+                                        return 'Avg Rating: ' + (context.raw / 25).toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
